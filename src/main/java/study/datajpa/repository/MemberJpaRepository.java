@@ -5,6 +5,8 @@ import study.datajpa.entity.Member;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,6 +23,29 @@ public class MemberJpaRepository {
     public Member save(Member member) {
         em.persist(member);
         return member;
+    }
+
+    public void delete(Member member) {
+        em.remove(member);
+    }
+
+    /**
+     * 전체조회나 where 문을 활용한 조회는 JPQL을 활용하여 조회해야한다.
+     * -> JPQL은 테이블을 대상을 하는것이 아닌 엔티티 객체를 대상으로 하는것이다.
+     */
+    public List<Member> findAll() {
+        return em.createQuery("select m from Member m", Member.class)
+                .getResultList();
+    }
+
+    public Optional<Member> findById(Long id) {
+        Member member = em.find(Member.class, id);
+        return Optional.ofNullable(member);
+    }
+
+    public long count() {
+        return em.createQuery("select count(m) from Member m", Long.class)
+                .getSingleResult();
     }
 
     public Member find(Long memberId) {
