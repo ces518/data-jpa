@@ -3,6 +3,8 @@ package study.datajpa.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import study.datajpa.entity.Member;
 
+import java.util.List;
+
 /**
  * Created by IntelliJ IDEA.
  * User: june
@@ -10,4 +12,6 @@ import study.datajpa.entity.Member;
  * Time: 23:12
  **/
 public interface MemberRepository extends JpaRepository<Member, Long> {
+
+    List<Member> findByUsername(String username);
 }
