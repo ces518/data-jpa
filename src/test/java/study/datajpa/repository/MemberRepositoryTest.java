@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
@@ -11,6 +12,7 @@ import study.datajpa.entity.Team;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -152,5 +154,36 @@ class MemberRepositoryTest {
             System.out.println("member = " + member);
         }
 
+    }
+
+    @Test
+    public void returnType() {
+        Member member1 = new Member("AAA", 10);
+        Member member2 = new Member("BBB", 20);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        /*
+            컬렉션
+            -> 컬렉션 결과가 없더라도 빈 컬렉션을 반환해준다.
+        * */
+        List<Member> members = memberRepository.findListByUsername("AAA");
+
+        /*
+            단건
+            -> JPA에서는 단건 조회 결과가 없을 경우 NoResultException 예외가 발생한다.
+            Spring data JPA 에서는 예외없이 null을 반환한다.
+            JAVA 8 부터는 Optional을 사용
+        * */
+        Member member = memberRepository.findOneByUsername("BBB");
+
+        /*
+            단건 조회인데 둘이상일 경우 (Optional 상관 없이)
+            -> IncorretResultSizeDateAccessException 이 발생 (Spring 예외)
+            원래는 NonUniqueResultException 이 발생함 (기존 예외)
+            Spring data JPA가 IncorretResultSizeDateAccessException 로 변환해 주는것
+            * 예외를 공통된 예외로 변환해주어 데이터베이스 등이 변경되어도 동일한 예외 처리가 가능하게끔 한다.
+        */
+        Optional<Member> optionalMember = memberRepository.findOptionalByUsername("BBB");
     }
 }
