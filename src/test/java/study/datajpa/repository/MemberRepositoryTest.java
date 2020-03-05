@@ -3,6 +3,10 @@ package study.datajpa.repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
@@ -185,5 +189,61 @@ class MemberRepositoryTest {
             * 예외를 공통된 예외로 변환해주어 데이터베이스 등이 변경되어도 동일한 예외 처리가 가능하게끔 한다.
         */
         Optional<Member> optionalMember = memberRepository.findOptionalByUsername("BBB");
+    }
+
+    @Test
+    public void paging() {
+        // given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+        memberRepository.save(new Member("member6", 10));
+        memberRepository.save(new Member("member7", 10));
+
+        // when
+        int age = 10;
+
+        // Pageable 은 0 부터 페이지가 시작
+        // PageRequest는 Pageable의 구현체
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+
+        Page<Member> page = memberRepository.findByAge(age, pageRequest);
+        // 반환타입이 Page일 경우 totalCount 쿼리까지 같이 나간다.
+        // 반환타입 List는 엔티티 목록만 조회한다.
+//        long totalCount = memberRepository.totalCount(age);
+        List<Member> members = page.getContent();
+        long totalCount = page.getTotalElements();
+
+        // then
+        assertThat(members.size()).isEqualTo(3);
+        assertThat(totalCount).isEqualTo(7);
+        assertThat(page.getNumber()).isEqualTo(0); // 페이지 번호도 제공한다.
+        assertThat(page.getTotalPages()).isEqualTo(3); // 총 페이지
+        assertThat(page.isFirst()).isTrue(); // 첫페이지 유무
+        assertThat(page.hasNext()).isTrue(); // 다음 페이지 존재 유무
+
+        /////////////////////////////////////////
+
+        // Slice 를 사용하면 totalCount는 가져오지 않는다.
+        // Slice는 limit + 1 개를 요청한다.
+        Slice<Member> slice = memberRepository.findSliceByAge(age, pageRequest);
+
+        // > 페이징 방식을 사용하다가 더보기 방식으로 변경하게 된다면 ?
+        // > 반환타입을 Slice로 수정하기만 하면 된다.
+
+        // * 페이징을 기피하는 이유
+        // totalCount 쿼리때문에 성능이 안나오는 경우가 많다.
+        // > DB의 모든 데이터를 카운트해야함.
+        // Spring data JPA의 페이징 기능을 활용하면 문제가 하나 존재함
+        // 엔티티를 조회할때 사용한 join을 totalCount 에서도 그대로 사용하기때문에 성능상 문제가 발생함
+        // totalCount 성능에 따라 다음 과 같이 최적화 진행
+        // @Query(value = "select m from Member m left join m.team t", countQuery = "select count(m) from Member m")
+
+        // * DTO로 반환하기
+        // Page에서 map 메소드를 제공하기 때문에 dto로 변환하여 손쉽게 반환할 수 있음
+        // Page는 API 에서 그대로 반환해도 좋음
+        Page<MemberDto> toDto = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
     }
 }
