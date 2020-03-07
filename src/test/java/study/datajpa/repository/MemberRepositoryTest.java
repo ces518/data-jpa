@@ -278,4 +278,72 @@ class MemberRepositoryTest {
         // then
         assertThat(resultCount).isEqualTo(4);
     }
+
+    @Test
+    public void findMemberA() {
+        // given
+
+        // member1 -> teamA
+        // member2 -> teamB
+        // member와 team의 연관관계는 LAZY이다.
+        // 실무에서는 무조건 LAZY로 지정해야한다.
+        // 가짜 객체를 담아뒀다가 Team을 사용할때 Team을 조회한다.
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+
+
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 10, teamB);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        em.flush();
+        em.clear();
+
+        // when
+        List<Member> members = memberRepository.findAll();
+
+        // LAZY로 지정했기 때문에
+        // N + 1 문제가 발생한다.
+        // JPA에서는 이를 해결하기 위해 fetch join 기능을 제공한다.
+        for (Member member : members) {
+            System.out.println("member = " + member.getUsername());
+            // LAZY로 지정했기 때문에 team은 프록시 객체이다
+            // member.team = class study.datajpa.entity.Team$HibernateProxy$JDELlbBI
+            System.out.println("member.team = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+        em.flush();
+        em.clear();
+
+        System.out.println("==================");
+
+        // fetch join을 사용하면 Member 엔티티를 조회할때 Team 엔티티까지 함께 조회해온다.
+        List<Member> fetchMembers = memberRepository.findMemberFetchJoin();
+
+        for (Member member : fetchMembers) {
+            System.out.println("member = " + member.getUsername());
+            System.out.println("member.team = " + member.getTeam().getClass());
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+
+        // fetch join 을 사용하려면 매번 JPQL을 사용해야하기 때문에 이를 해결하기 위한 방법중 하나로
+        // @EntityGraph 기능을 제공한다.
+
+        // then
+    }
 }
+
+
+
+
+
+
+
+
+
+

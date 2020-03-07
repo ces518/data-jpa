@@ -3,6 +3,7 @@ package study.datajpa.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -62,4 +63,30 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Query("update Member m set m.age = m.age + 1 where m.age >= :age")
     int bulkAgePlus(@Param("age") int age);
 
+    @Query("select m from Member m left join fetch m.team")
+    List<Member> findMemberFetchJoin();
+
+    /*
+        @EntityGraph
+        - fetch join을 간단하게 사용하고 싶을때 사용
+        - attributePaths 에 해당 속성을 지정해주면 된다.
+        아래의 세가지 방식을 지원한다.
+
+        > EntityGraph는 JPA 2.2 부터 제공하는 기능이다.
+        -> NamedEntityGraph 라는 기능도 존재함
+        -> NamedQuery와 유사하다.
+
+        * 간단한 fetch join의 경우 EntityGraph를 사용하고 복잡해 지는경우 JPQL 혹은 QueryDSL 사용
+    */
+    @Override
+    @EntityGraph(attributePaths = "team")
+    List<Member> findAll();
+
+    @EntityGraph(attributePaths = "team")
+    @Query("select m from Member m")
+    List<Member> findMemberEntityGraph();
+
+//    @EntityGraph(attributePaths = "team")
+    @EntityGraph("Member.All") // NamedEntityGraph 기능 사용
+    List<Member> findEntityGraphByUsername(@Param("name") String username);
 }
