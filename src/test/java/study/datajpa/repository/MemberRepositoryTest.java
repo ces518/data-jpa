@@ -14,6 +14,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +29,7 @@ class MemberRepositoryTest {
 
     @Autowired MemberRepository memberRepository;
     @Autowired TeamRepository teamRepository;
+    @PersistenceContext EntityManager em;
 
     @Test
     public void testMember() {
@@ -245,5 +248,34 @@ class MemberRepositoryTest {
         // Page에서 map 메소드를 제공하기 때문에 dto로 변환하여 손쉽게 반환할 수 있음
         // Page는 API 에서 그대로 반환해도 좋음
         Page<MemberDto> toDto = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+    }
+
+
+    @Test
+    public void bulkUpdate() {
+        // given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 19));
+        memberRepository.save(new Member("member3", 20));
+        memberRepository.save(new Member("member4", 21));
+        memberRepository.save(new Member("member5", 30));
+        memberRepository.save(new Member("member6", 17));
+        memberRepository.save(new Member("member7", 40));
+
+        // when
+        int resultCount = memberRepository.bulkAgePlus(20);
+        // Spring data JPA를 사용한다면 @Modifying의 옵션으로 영속성 컨텍스트 를 비워주는 로직 생략이 가능
+        em.flush(); // 변경되지 않은 부분 DB에 반영
+        em.clear(); // 영속성 컨텍스트를 비워줌
+        // JPA 기본 동작: JPQL을 사용하면 DB에 flush를 한번 해줌
+
+        // JPA 를 사용하면 bulk 연산에서 조심해야 할점이다.
+        // 벌크 연산은 영속성 컨텍스트가 아닌 DB에 바로 반영해버리기 때문에 영속성 컨텍스트에 존재하는 엔티티와는 다르다.
+        // 벌크 연산 이후에는 영속성 컨텍스트를 날려버려야 한다.
+        List<Member> result = memberRepository.findByUsername("member5");
+        Member member5 = result.get(0);
+        System.out.println("member5.getAge() = " + member5.getAge());
+        // then
+        assertThat(resultCount).isEqualTo(4);
     }
 }
