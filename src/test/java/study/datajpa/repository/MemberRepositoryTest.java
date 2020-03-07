@@ -336,6 +336,63 @@ class MemberRepositoryTest {
 
         // then
     }
+
+    @Test
+    public void queryHint() {
+        // given
+
+        // readOnly Hint를 제공한다.
+        Member savedMember = memberRepository.save(new Member("member1", 10));
+        Member savedMembers = memberRepository.save(new Member("members", 10));
+        em.flush();
+        em.clear();
+
+        // when
+
+        Member findMember = memberRepository.findById(savedMember.getId()).get();
+        // 기존 동작이라면 영속성 컨텍스트에서 관리하는 엔티티이기 때문에 변경감지가 동작하여 update 쿼리가 날아간다.
+        // 변경 감지는 내부적으로는 최적화를 하겠지만 결국 두개의 객체를 가지고 있기 때문에 메모리를 더 잡아먹는다.
+        findMember.setUsername("member2");
+
+        // 100% 조회로만 사용할것이라면 최적화하는 방식이 존재한다.
+        // JPA에서는 제공하지 않고, Hibernate에서만 제공하는 기능
+        // 내부적으로 snapshot을 사용하지 않기때문에 변경감지가 일어나지 않는다.
+        Member findMember2 = memberRepository.findReadOnlyByUsername("members");
+        findMember2.setUsername("members2");
+
+        // 이러한 쿼리힌트를 사용하는것은 극소수이다.
+        // 적용하기 전에 성능테스트를 먼저 진행해보고 결정할것.
+        // 무조건 다 넣는다고 좋은것은 아님.
+        // 정말 성능 최적화가 필요하다면 이미 캐시를 사용해야하기 떄문에 Redis등이 존재할것임
+
+        // then
+    }
+
+    @Test
+    public void lock() {
+        // given
+
+        Member savedMember = memberRepository.save(new Member("member1", 10));
+        Member savedMembers = memberRepository.save(new Member("members", 10));
+        em.flush();
+        em.clear();
+
+        // when
+
+        // select 쿼리 후미에 for update가 사용됨
+        /*
+            select
+                member0_.member_id as member_i1_0_,
+                member0_.age as age2_0_,
+                member0_.team_id as team_id4_0_,
+                member0_.username as username3_0_
+            from
+                member member0_
+            where
+                member0_.username=? for update
+         */
+        Member member1 = memberRepository.findLockByUsername("member1");
+    }
 }
 
 
