@@ -12,6 +12,11 @@ spring:
       hibernate:
         # show_sql: true
         format_sql: true
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        one-indexed-parameters: true # 인덱스가 1부터 시작된다
 
 logging.level:
   org.hibernate.SQL: debug

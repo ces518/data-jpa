@@ -1,9 +1,15 @@
 package study.datajpa.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.repository.MemberRepository;
 
@@ -25,6 +31,9 @@ public class MemberController {
     @PostConstruct
     public void init() {
         memberRepository.save(new Member("userA"));
+        for (int i = 0; i < 100; i++) {
+            memberRepository.save(new Member("user" + i));
+        }
     }
 
     @GetMapping("/members/{id}")
@@ -45,4 +54,16 @@ public class MemberController {
         return member.getUsername();
     }
 
+    // Page 타입은 그대로 사용해도 좋음
+    @GetMapping("/members")
+    public Page<MemberDto> list(@PageableDefault(size = 5) Pageable pageable,
+                             @Qualifier("member") Pageable memberPageable,
+                             @Qualifier("order") Pageable orderPageable) {
+        Pageable request = PageRequest.of(1, 2);
+        // Pageable 파라메터를 받을수 있도록 지원 (페이지에 관련된 정보)
+        // 인터페이스로 받지만, 스프링부트가 구현체로 받게끔 해준다.
+        Page<Member> page = memberRepository.findAll(pageable);
+        Page<MemberDto> map = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+        return map;
+    }
 }
