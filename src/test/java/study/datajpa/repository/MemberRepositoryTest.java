@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
@@ -397,6 +398,33 @@ class MemberRepositoryTest {
     @Test
     public void callCustom() {
         List<Member> members = memberRepository.findMemberCustom();
+    }
+
+    @Test
+    public void specBasic() {
+        // given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        // when
+
+        // Specification의 장점 기존에 정의해둔 스팩을 and, or등을 사용해서 조합이 가능하다.
+        // Criteria를 활용한 기술
+        // 실무에서 사용하기엔 너무 에로사항이 많다..
+        // QueryDSL을 쓰도록 하자.
+        Specification<Member> spec = MemberSpec.username("m1").and(MemberSpec.teamName("teamA"));
+        List<Member> members = memberRepository.findAll(spec);
+
+        // then
+        assertThat(members.size()).isEqualTo(1);
     }
 }
 

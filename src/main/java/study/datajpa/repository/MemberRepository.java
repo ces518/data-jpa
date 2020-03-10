@@ -20,7 +20,7 @@ import java.util.Optional;
  * Date: 2020-02-23
  * Time: 23:12
  **/
-public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom, JpaSpecificationExecutor<Member> {
 
     // JPQL에서 명확하게 namedParam을 사용했을때 @Param을 사용해야한다.
     // 애노테이션이 없어도 동작한다.

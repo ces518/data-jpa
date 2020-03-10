@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.datajpa.entity.Item;
 
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -15,7 +17,7 @@ class ItemRepositoryTest {
     @Test
     public void save() {
         // @GeneratedValue 를 사용할 경우
-        Item item = new Item();
+        Item item = new Item(LocalDateTime.now());
         itemRepository.save(item); // JPA에 Persist 하는 순간에 내부에서 ID가 생성됨
 
         /////////////////////
