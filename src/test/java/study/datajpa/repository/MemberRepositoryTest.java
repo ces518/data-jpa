@@ -467,6 +467,56 @@ class MemberRepositoryTest {
         // then
         assertThat(members.size()).isEqualTo(1);
     }
+
+    @Test
+    public void projections() {
+        // given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        // when
+        List<UserNameOnly> result = memberRepository.findProjectionsByUsername("m1");
+        // JDKDynamicProxy 객체를 담고 있음.
+        // 인터페이스를 정의하면 실제 구현체는 Spring data JPA가 만들어 줌
+        for (UserNameOnly userNameOnly : result) {
+            System.out.println("userNameOnly = " + userNameOnly.getUsername());
+        }
+
+        // class Projection
+        // Proxy를 사용하지 않고, 실제 구현체인 Class를 사용한다.
+        List<UsernameOnlyDto> results = memberRepository.findClazzProjectionsByUsername("m1");
+        for (UsernameOnlyDto usernameOnlyDto : results) {
+            System.out.println("usernameOnlyDto = " + usernameOnlyDto);
+        }
+        
+        // dynamic Projection
+        // 동적 프로잭션
+        List<UsernameOnlyDto> results2 = memberRepository.findClazzDynamicProjectionsByUsername("m1", UsernameOnlyDto.class);
+        for (UsernameOnlyDto usernameOnlyDto : results2) {
+            System.out.println("usernameOnlyDto = " + usernameOnlyDto);
+        }
+
+        // 중첩구조 Projection
+        // Member는 Username은 정확하게 최적화가 된다 (Root)
+        // 2뎁스 부터는 최적화가 되지않고 Team 엔티티를 가져온다.
+        // join은 leftJoin으로 들어간다.
+        List<NestedClosedProjections> results3 = memberRepository.findClazzDynamicProjectionsByUsername("m1", NestedClosedProjections.class);
+        for (NestedClosedProjections nestedClosedProjections : results3) {
+            String username = nestedClosedProjections.getUsername();
+            String teamName = nestedClosedProjections.getTeam().getName();
+            System.out.println("username = " + username);
+            System.out.println("teamName = " + teamName);
+        }
+        // then
+    }
 }
 
 

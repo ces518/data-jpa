@@ -96,4 +96,11 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
     // DB에서 셀렉 할때 Lock을 거는 방식을 JPA에서도 지원한다.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Member findLockByUsername(@Param("name") String username);
+
+    List<UserNameOnly> findProjectionsByUsername(@Param("username") String username);
+
+    List<UsernameOnlyDto> findClazzProjectionsByUsername(@Param("username") String username);
+
+    // 동적 프로젝션
+    <T> List<T> findClazzDynamicProjectionsByUsername(@Param("username") String username, Class<T> type);
 }
