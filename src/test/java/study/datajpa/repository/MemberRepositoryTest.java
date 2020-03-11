@@ -3,10 +3,7 @@ package study.datajpa.repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.TestPropertySource;
@@ -422,6 +419,50 @@ class MemberRepositoryTest {
         // QueryDSL을 쓰도록 하자.
         Specification<Member> spec = MemberSpec.username("m1").and(MemberSpec.teamName("teamA"));
         List<Member> members = memberRepository.findAll(spec);
+
+        // then
+        assertThat(members.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void queryByExample() {
+        // given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        // when
+
+        // m1을 조회하고 싶은경우 ? -> 정적인 경우에 사용이 가능하다.
+        memberRepository.findByUsername("m1");
+
+        // Probe
+        // 엔티티가 검색조건이 된다.
+        Member member = new Member("m1");
+        Team team = new Team("teamA");
+        member.setTeam(team); // JOIN 같은 경우 컨디션 자체를 연관관계로 만든다.
+
+        // 문제점 -> 도메인 객체를 가지고 검색조건을 만들어버린다.
+        // 기본 전략 -> null은 무시함
+        // age = 0 으로 기본값이 세팅되기때문에 검색 조건에 들어간다.
+        // 이를 무시하는 코드가 필요함
+        ExampleMatcher matcher = ExampleMatcher.matching()
+                .withIgnorePaths("age");
+        // ignore 설정한 matcher를 Example 생성시 같이 넣어준다.
+        Example<Member> example = Example.of(member, matcher);
+
+        List<Member> members = memberRepository.findAll(example); // Example을 파라메터로 받는걸 기본기능에서 제공
+
+
+        // 이런 기술들의 문제점은 조인이 잘 해결이 되지 않는다.
+        // QueryByExample은 조인이 되긴하지만 INNER JOIN만 가능하다.
 
         // then
         assertThat(members.size()).isEqualTo(1);
